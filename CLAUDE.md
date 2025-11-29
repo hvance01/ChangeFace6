@@ -4,32 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ChangeFace3 is a Python project currently in early development stage.
+ChangeFace3 is a Streamlit-based video face-swapping tool designed for marketing video personalization. It uses the Replicate API (okaris/roop model) to swap faces in videos.
 
-## Project Structure
+## Architecture
 
-The repository is currently minimal with the following setup:
-- `.gitignore`: Standard Python gitignore configuration
-- `需求描述.md`: Project requirements document (currently empty)
+```
+app.py                    # Main Streamlit application entry point
+config.py                 # Configuration (API tokens, file limits, model selection)
+utils/
+├── auth.py              # User authentication (file-based, SHA256 hashed passwords)
+├── face_swap.py         # Replicate API integration for face swapping
+└── file_handler.py      # File upload/cleanup utilities
+```
 
-## Development Environment
-
-This is a Python project. The `.gitignore` includes support for various Python tooling:
-- Package managers: pip, poetry, pdm, pipenv, uv, pixi
-- Testing: pytest, coverage, hypothesis
-- Type checking: mypy, pytype
-- Linting: ruff
-- Notebooks: Jupyter, Marimo
-- Frameworks: Django, Flask, Scrapy
-- IDEs: PyCharm, VS Code, Cursor
+**Key Flow:**
+1. User logs in via `AuthManager` (credentials from `users.txt`)
+2. User uploads face image + target video
+3. `swap_face_replicate_roop()` calls Replicate API with local file handles
+4. Result URL is returned and displayed for download
 
 ## Common Commands
 
-Commands will be added as the project structure develops. Typical Python project commands include:
-- Testing: `pytest` (once tests are added)
-- Type checking: `mypy .` (if type hints are used)
-- Linting: `ruff check .` (if ruff is configured)
+```bash
+# Run the application
+streamlit run app.py
 
-## Notes
+# Full deployment (creates venv, installs deps, starts app)
+./start.sh
 
-This is a new repository with minimal initial setup. This file should be updated as the project architecture and development workflows are established.
+# Test backend face-swap function directly
+python test_backend.py
+```
+
+## Configuration
+
+- **API Token**: Set `REPLICATE_API_TOKEN` in `.env` file
+- **Users**: Create `users.txt` with format `username:password` per line (see `users.txt.example`)
+- **Model**: Change `FACE_SWAP_MODEL` in `config.py` to switch between available models
+
+## Key Implementation Details
+
+- Authentication uses Streamlit session state; passwords are SHA256 hashed
+- Uploaded files are saved to `temp/uploads/` with UUID filenames
+- Old files are auto-cleaned after 24 hours via `cleanup_old_files()`
+- The Replicate API uses file handles directly (not URLs) for `okaris/roop` model
