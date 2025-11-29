@@ -1,0 +1,34 @@
+✅ API Token 已加载: r8_e1XvmiC...
+✅ 找到测试文件:
+   - 照片: input2/target.jpg (105.2 KB)
+   - 视频: input2/target.mp4 (2.0 MB)
+
+============================================================
+开始测试 Replicate API 调用...
+============================================================
+
+📂 正在打开文件...
+✅ 文件已打开
+
+🚀 调用 Replicate API...
+   模型: okaris/roop:8c1e100e (最新版本)
+   参数:
+   - source: 照片文件
+   - target: 视频文件
+   - keep_fps: True
+   - keep_frames: True
+   - enhance_face: False
+
+✅ API 调用成功!
+
+📤 返回结果类型: <class 'generator'>
+📥 正在获取结果...
+📦 结果数量: 1
+🎬 结果视频 URL: https://replicate.delivery/yhqm/hApdaBfamhyDDi3FXrkb4aoaUywE2BBXAS7SJhokuDl9lc0KA/swapped-tmpxpi11621download.mp4
+
+============================================================
+✅ 测试成功!
+============================================================
+
+您可以访问以下 URL 下载结果视频:
+https://replicate.delivery/yhqm/hApdaBfamhyDDi3FXrkb4aoaUywE2BBXAS7SJhokuDl9lc0KA/swapped-tmpxpi11621download.mp4

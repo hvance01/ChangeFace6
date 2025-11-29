@@ -1,0 +1,5 @@
+streamlit>=1.40.0
+replicate>=0.25.0
+python-dotenv>=1.0.0
+pillow>=11.0.0
+requests>=2.32.0
