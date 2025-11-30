@@ -1,9 +1,9 @@
 import streamlit as st
 import os
-from utils.face_swap import swap_face_replicate_roop, estimate_cost
+from utils.face_swap import swap_face, estimate_cost, get_available_models, get_model_info
 from utils.file_handler import save_uploaded_file, cleanup_old_files
 from utils.auth import AuthManager, show_login_page
-from config import UPLOAD_DIR, RESULT_DIR
+from config import UPLOAD_DIR, RESULT_DIR, FACE_SWAP_MODEL, AKOOL_API_KEY, REPLICATE_API_TOKEN
 
 # 页面配置
 st.set_page_config(
@@ -76,11 +76,22 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     ### 🔑 配置 API Token
-    使用前请先配置 Replicate API Token:
-    1. 访问 [Replicate](https://replicate.com)
-    2. 注册并获取 API Token
-    3. 在项目根目录创建 `.env` 文件
-    4. 添加: `REPLICATE_API_TOKEN=your_token`
+
+    **当前使用: Akool API (推荐)**
+
+    1. 访问 [Akool](https://akool.com)
+    2. 注册账号并登录
+    3. 点击右上角 **API** 图标
+    4. 点击 **API Credentials**
+    5. 复制 **API Key**
+    6. 在 `.env` 文件中添加:
+       ```
+       AKOOL_API_KEY=your_api_key
+       ```
+
+    **备选: Replicate API**
+    - 设置 `FACE_SWAP_MODEL=okaris_roop`
+    - 添加 `REPLICATE_API_TOKEN=xxx`
     """)
 
 # 主界面 - 分两列
@@ -124,16 +135,33 @@ with col1:
 with col2:
     st.subheader("🎬 步骤2: 开始处理")
 
+    # 获取当前模型信息
+    model_info = get_model_info()
+    available_models = get_available_models()
+
+    # 显示当前使用的模型
+    st.info(f"🤖 当前模型: **{model_info.get('name', FACE_SWAP_MODEL)}**")
+    if model_info.get('description'):
+        st.caption(model_info.get('description'))
+
     # 检查是否配置了 API Token
-    from config import REPLICATE_API_TOKEN
-    if not REPLICATE_API_TOKEN or REPLICATE_API_TOKEN == "your_replicate_api_token_here":
-        st.error("❌ 未配置 Replicate API Token！")
-        st.info("请查看左侧说明配置 API Token")
-    else:
-        st.success("✅ API Token 已配置")
+    api_configured = False
+    if FACE_SWAP_MODEL == "akool":
+        if AKOOL_API_KEY:
+            st.success("✅ Akool API Key 已配置")
+            api_configured = True
+        else:
+            st.error("❌ 未配置 Akool API Key！")
+            st.info("请查看左侧说明配置 API Key")
+    elif FACE_SWAP_MODEL == "okaris_roop":
+        if REPLICATE_API_TOKEN:
+            st.success("✅ Replicate API Token 已配置")
+            api_configured = True
+        else:
+            st.error("❌ 未配置 Replicate API Token！")
 
     # 开始换脸按钮
-    if st.button("🚀 开始换脸", type="primary", use_container_width=True, disabled=not REPLICATE_API_TOKEN or REPLICATE_API_TOKEN == "your_replicate_api_token_here"):
+    if st.button("🚀 开始换脸", type="primary", use_container_width=True, disabled=not api_configured):
         if not face_image or not video_file:
             st.error("❌ 请先上传头像照片和视频！")
         else:
@@ -153,10 +181,14 @@ with col2:
                     video_path = save_uploaded_file(video_file, "video")
 
                     # 步骤2: 调用API
-                    status_text.text("🎨 正在调用换脸 API，请稍候（约1-2分钟）...")
+                    status_text.text("🎨 正在调用换脸 API，请稍候（约2-5分钟）...")
                     progress_bar.progress(40)
 
-                    result_url = swap_face_replicate_roop(face_path, video_path)
+                    # 进度回调
+                    def update_progress(status, message):
+                        status_text.text(f"🎨 {message}")
+
+                    result_url = swap_face(face_path, video_path, progress_callback=update_progress)
 
                     # 步骤3: 完成
                     progress_bar.progress(100)
@@ -214,17 +246,28 @@ st.markdown("---")
 
 # 显示一些统计信息
 col_stat1, col_stat2, col_stat3 = st.columns(3)
+
+# 根据当前模型显示成本
+if FACE_SWAP_MODEL == "akool":
+    cost_text = "¥0.7/10秒"
+    cost_help = "使用 Akool API，效果最佳"
+    model_text = "Akool 4K"
+else:
+    cost_text = "¥0.6/次"
+    cost_help = "使用 okaris/roop API"
+    model_text = "Roop"
+
 with col_stat1:
-    st.metric("处理成本", "¥0.6/次", help="使用 okaris/roop API")
+    st.metric("处理成本", cost_text, help=cost_help)
 with col_stat2:
-    st.metric("处理时长", "约1分钟", help="根据视频大小而定")
+    st.metric("处理时长", "约2-5分钟", help="根据视频大小而定")
 with col_stat3:
-    st.metric("支持格式", "MP4, MOV", help="照片支持 JPG, PNG")
+    st.metric("当前模型", model_text, help="支持格式: MP4, MOV")
 
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style="text-align: center; color: gray;">
-    <p>Powered by okaris/roop API on Replicate | ChangeFace3 © 2025</p>
+    <p>Powered by {model_info.get('name', 'Akool')} API | ChangeFace © 2025</p>
     <p>适合大码男装等行业的营销视频快速换脸</p>
 </div>
 """, unsafe_allow_html=True)
